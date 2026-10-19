@@ -731,6 +731,103 @@
   /* 행성이 5개가 되며 맨 왼쪽 자리(16.7%)가 생겼고, 배경 별(top 76%·left 14%)이 그
      이름표 위에 얹혔다 - 별만 왼쪽으로 비킨다. */
   .stage > .sparkle[style*="top:76%; left:14%"]{ left:7% !important; }
+
+  /* ── 시안 A·B·D 상시 모션 (2026-10-19) ─────────────────────────────────────
+     그림 위에 얹는 장식 레이어다(포인터 통과). 좌표·크기는 맨 아래 스크립트의 FX 표 -
+     전부 PNG 실측값(그림 폭 대비 %)이라 그림을 바꾸면 다시 재야 한다.
+       A: 테두리 베벨(안쪽 3%) 위를 도는 빛 + 별 반짝임
+       B: 외눈 깜박임 + 별 반짝임
+       D: 두 눈 깜박임 + 도토리 광택 + 별 반짝임
+     호버 움직임(떠오름·확대·글로우)은 위 .has-concept 규칙 그대로 함께 돈다. */
+  .vfx-star, .vfx-lid, .vfx-glint, .vfx-rim{ position:absolute; pointer-events:none; }
+
+  /* 반짝임: 빛줄기 두 개(가로·세로)를 겹친 4각 별. 원래 그려진 별 위에서 커졌다 사라진다. */
+  .vfx-star{
+    left:var(--x); top:var(--y);
+    width:var(--s); height:var(--s);
+    margin:calc(var(--s) / -2) 0 0 calc(var(--s) / -2); /* % 는 컨테이너 폭 기준 - 타일이 정사각형이라 안전 */
+    opacity:0;
+    animation:vfx-twinkle var(--dur, 2.8s) ease-in-out var(--delay, 0s) infinite;
+  }
+  .vfx-star::before, .vfx-star::after{
+    content:''; position:absolute; left:50%; top:50%;
+    background:radial-gradient(closest-side, #fff 0%, var(--glow) 42%, transparent 100%);
+    transform:translate(-50%, -50%);
+  }
+  .vfx-star::before{ width:100%; height:20%; }
+  .vfx-star::after{ width:20%; height:100%; }
+  @keyframes vfx-twinkle{
+    0%, 58%, 100%{ opacity:0; transform:scale(.25) rotate(0deg); }
+    74%{ opacity:1; transform:scale(1) rotate(20deg); }
+    88%{ opacity:.4; transform:scale(.6) rotate(40deg); }
+  }
+
+  /* A 테두리 빛: 베벨과 같은 둥근 사각 경로(pathLength 100)를 따라 꼬리+머리 두 점선이
+     시계방향으로 돈다. 머리는 꼬리 앞끝에 오도록 (18-5)/100 주기만큼 앞서 출발. */
+  .vfx-rim{
+    inset:0; width:100%; height:100%; overflow:visible;
+    filter:drop-shadow(0 0 1.5px rgba(255,140,235,.95));
+  }
+  .vfx-rim rect{ fill:none; stroke-linecap:round; animation:vfx-rim-run 3.6s linear infinite; }
+  .vfx-rim .vfx-rim-tail{ stroke:rgba(255,185,245,.6); stroke-width:1.2; stroke-dasharray:18 82; }
+  .vfx-rim .vfx-rim-head{ stroke:#fff; stroke-width:1.7; stroke-dasharray:5 95; animation-delay:-.468s; }
+  @keyframes vfx-rim-run{ from{ stroke-dashoffset:0; } to{ stroke-dashoffset:-100; } }
+
+  /* 깜박임: 눈 크기 원(눈보다 조금 크게) 안에서 털색 눈꺼풀이 내려왔다 올라간다. 닫힌
+     순간에는 눈꺼풀 가장자리를 원 밖으로 내리고(위로 20% 더 길게 만들어 위쪽은 안 비게)
+     대신 감은 눈 곡선(::after)을 보인다 - 가장자리 선과 곡선이 두 줄로 겹치지 않게. */
+  .vfx-lid{
+    left:var(--x); top:var(--y);
+    width:var(--w); height:var(--h);
+    margin:calc(var(--h) / -2) 0 0 calc(var(--w) / -2);
+    border-radius:50%;
+    overflow:hidden;
+  }
+  .vfx-lid::before{
+    content:''; position:absolute; top:-20%; left:0; right:0; bottom:0;
+    background:var(--fur);
+    border-bottom:var(--lash) solid #3a2836;
+    border-radius:0 0 50% 50% / 0 0 30% 30%;
+    transform:translateY(-110%);
+    animation:vfx-blink var(--blink) ease-in-out var(--blink-delay) infinite;
+  }
+  .vfx-lid::after{
+    content:''; position:absolute; left:18%; right:18%; top:34%; height:28%;
+    border-bottom:var(--lash) solid #3a2836;
+    border-radius:0 0 50% 50% / 0 0 100% 100%;
+    opacity:0;
+    animation:vfx-blink-line var(--blink) linear var(--blink-delay) infinite;
+  }
+  @keyframes vfx-blink{
+    0%, 88%, 96%, 100%{ transform:translateY(-110%); }
+    91%, 93%{ transform:translateY(10%); }
+  }
+  @keyframes vfx-blink-line{
+    0%, 90.4%, 93.6%, 100%{ opacity:0; }
+    91%, 93%{ opacity:1; }
+  }
+
+  /* D 도토리 광택: 도토리 모양 마스크(PNG 에서 추출해 스크립트에 data URI 로 둠) 안에서만
+     빛 띠가 왼쪽→오른쪽으로 지나간다. */
+  .vfx-glint{
+    inset:0; overflow:hidden;
+    -webkit-mask-size:100% 100%; mask-size:100% 100%;
+    -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+  }
+  .vfx-glint::before{
+    content:''; position:absolute; top:0; bottom:0; left:0; width:55%;
+    background:linear-gradient(105deg, rgba(255,255,255,0) 32%, rgba(255,252,230,.92) 50%, rgba(255,255,255,0) 68%);
+    transform:translateX(-100%);
+    animation:vfx-glint 3.6s ease-in-out infinite;
+  }
+  @keyframes vfx-glint{
+    0%, 50%{ transform:translateX(-100%); }
+    80%, 100%{ transform:translateX(190%); }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .vfx-star, .vfx-rim rect, .vfx-lid::before, .vfx-lid::after, .vfx-glint::before{ animation:none; }
+  }
 </style>
 </head>
 <body>
@@ -1367,6 +1464,96 @@
     },
   ];
 
+  // ── 시안 A·B·D 상시 모션 (CSS .vfx-*) ── 좌표는 그림 폭 대비 %, PNG 실측.
+  // 별: [x, y, 크기, 글로우색(생략 시 fx.glow)] - 크기는 그려진 별의 약 1.8배(빛이 번지는 폭).
+  const ACORN_MASK = 'data:image/png;base64,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';
+  const FX = {
+    A: {
+      rim: { inset: 3, radius: 21.5 }, // 베벨: 안쪽 23~27px/822px ≈ 3%, 모서리 반지름 24.5% - 3%
+      glow: 'rgba(150,232,255,.8)',
+      stars: [
+        [80.8, 38.7, 17], [22.4, 48.6, 15, 'rgba(255,214,170,.85)'], [58.1, 16.2, 11],
+        [49.5, 28.4, 9, 'rgba(255,175,215,.85)'], [17.4, 27.3, 8], [74.7, 52.8, 7, 'rgba(255,175,215,.85)'],
+      ],
+    },
+    B: {
+      glow: 'rgba(255,236,150,.85)',
+      stars: [[19.9, 32.2, 16], [79.0, 25.6, 14], [85.8, 37.0, 12], [14.9, 59.3, 13], [84.0, 60.2, 9], [90.8, 76.6, 8]],
+      // 외눈: 흰자 원 중심 (49.2%, 39.3%) 지름 19.5% → 바깥 음영까지 덮도록 1.14배.
+      // 털색은 위 민트 → 아래 노랑 그라데이션이라 눈꺼풀도 같은 순서로 칠한다(주변 실측색).
+      blink: {
+        dur: 4.2, delay: -2.5,
+        eyes: [{ x: 49.16, y: 39.27, w: 22.2, h: 22.2, lash: 1.6,
+                 fur: 'linear-gradient(180deg, #afe3d4 0%, #bcdcbc 30%, #d0d39a 52%, #e2c27a 76%, #f0c27a 100%)' }],
+      },
+    },
+    D: {
+      glow: 'rgba(225,195,255,.85)',
+      stars: [[17.7, 32.8, 11], [80.2, 23.2, 10], [20.9, 74.5, 9], [89.2, 75.9, 7], [13.9, 49.1, 6]],
+      // 두 눈: 지름 약 5.1% → 1.35배. 눈 주변 털색 실측 평균.
+      blink: {
+        dur: 4.8, delay: -1.2,
+        eyes: [
+          { x: 39.63, y: 42.40, w: 6.9, h: 7.1, lash: 1, fur: '#ecc1b3' },
+          { x: 59.57, y: 42.37, w: 6.8, h: 7.4, lash: 1, fur: '#dfab9f' },
+        ],
+      },
+      glint: ACORN_MASK,
+    },
+  };
+
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const fxEl = (cls, vars) => {
+    const el = document.createElement('i');
+    el.className = cls;
+    el.setAttribute('aria-hidden', 'true');
+    Object.entries(vars || {}).forEach(([k, v]) => el.style.setProperty(k, v));
+    return el;
+  };
+  const addFx = (box, fx) => {
+    if (fx.rim) {
+      const svg = document.createElementNS(SVG_NS, 'svg');
+      svg.setAttribute('class', 'vfx-rim');
+      svg.setAttribute('viewBox', '0 0 100 100');
+      svg.setAttribute('aria-hidden', 'true');
+      const side = 100 - fx.rim.inset * 2;
+      ['tail', 'head'].forEach((part) => {
+        const r = document.createElementNS(SVG_NS, 'rect');
+        r.setAttribute('class', `vfx-rim-${part}`);
+        r.setAttribute('x', fx.rim.inset);
+        r.setAttribute('y', fx.rim.inset);
+        r.setAttribute('width', side);
+        r.setAttribute('height', side);
+        r.setAttribute('rx', fx.rim.radius);
+        r.setAttribute('pathLength', '100');
+        svg.appendChild(r);
+      });
+      box.appendChild(svg);
+    }
+    if (fx.glint) {
+      const g = fxEl('vfx-glint');
+      g.style.webkitMaskImage = `url("${fx.glint}")`;
+      g.style.maskImage = `url("${fx.glint}")`;
+      box.appendChild(g);
+    }
+    if (fx.blink) {
+      fx.blink.eyes.forEach((e) => {
+        box.appendChild(fxEl('vfx-lid', {
+          '--x': `${e.x}%`, '--y': `${e.y}%`, '--w': `${e.w}%`, '--h': `${e.h}%`,
+          '--fur': e.fur, '--lash': `${e.lash}px`,
+          '--blink': `${fx.blink.dur}s`, '--blink-delay': `${fx.blink.delay}s`,
+        }));
+      });
+    }
+    (fx.stars || []).forEach(([x, y, size, glow], i) => {
+      box.appendChild(fxEl('vfx-star', {
+        '--x': `${x}%`, '--y': `${y}%`, '--s': `${size}%`, '--glow': glow || fx.glow,
+        // 별마다 주기·시작을 어긋나게 해 한꺼번에 깜박이지 않게 한다.
+        '--dur': `${(2.4 + (i % 3) * 0.55).toFixed(2)}s`, '--delay': `${(-i * 0.9).toFixed(2)}s`,
+      }));
+    });
+  };
+
   const planet = document.querySelector('.planet[data-service-id="vocanb"]');
   if (!planet) return;
   const orbit = planet.querySelector('.planet-orbit');
@@ -1445,6 +1632,7 @@
       ring.alt = '';
       sphere.appendChild(ring);
     }
+    if (FX[c.key]) addFx(sphere, FX[c.key]);
     planet.classList.toggle('is-neon', !!c.neon);
     planet.dataset.concept = c.key;
     if (bubble) bubble.remove();
